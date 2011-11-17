@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text;
 using System.Diagnostics;
 using System.Web;
@@ -31,16 +30,17 @@ namespace CirrusConsoleDemo
         public void init()
         {
             properties = new Dictionary<string, string>();
-            foreach (var row in File.ReadAllLines("../../buyerapp.txt"))
+            foreach (String row in File.ReadAllLines("buyerapp.txt"))
             {
-                properties.Add(row.Split('=')[0], string.Join("=", row.Split('=').Skip(1).ToArray()));
+                properties.Add(row.Split('=')[0], row.Split('=')[1]);
             }
+            Console.Write("Logging in for "+properties["username"]);
         }
 
         public void login()
         {
             string postData = oauthoptions + "&client_id=" + properties["consumerkey"] + "&client_secret=" + properties["privatekey"] + "&username=" + properties["username"] + "&password=" + properties["password"];
-            string responseFromServer = doHTTPRequest(oauthendpoint, postData);
+            string responseFromServer = doHTTPRequest(oauthendpoint, postData, "", false);
             string[] data = responseFromServer.Split(':');
             token = data[7];
             token = token.Substring(1, token.Length - 1);
@@ -66,7 +66,7 @@ namespace CirrusConsoleDemo
             Console.Write(responseFromServer);
         }
 
-        public string doHTTPRequest(string endpoint, string postData = "", string token = "", Boolean isJSON = false)
+        public string doHTTPRequest(string endpoint, string postData, string token, Boolean isJSON)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(endpoint);
             request.Method = "POST";
@@ -87,18 +87,31 @@ namespace CirrusConsoleDemo
             Stream dataStream = request.GetRequestStream();
             dataStream.Write(byteArray, 0, byteArray.Length);
             dataStream.Close();
-            WebResponse response = request.GetResponse();
-            Console.WriteLine(((HttpWebResponse)response).StatusDescription);
+            WebResponse response;
+            try {
+                response = request.GetResponse();
+                dataStream = response.GetResponseStream();
+                StreamReader reader = new StreamReader(dataStream);
+                string responseFromServer = reader.ReadToEnd();
+                reader.Close();
+                dataStream.Close();
+                response.Close();
 
-            dataStream = response.GetResponseStream();
-            StreamReader reader = new StreamReader(dataStream);
-            string responseFromServer = reader.ReadToEnd();
-            Console.WriteLine(responseFromServer);
-            reader.Close();
-            dataStream.Close();
-            response.Close();
+                return responseFromServer;
+            } catch (System.Net.WebException error) {
+                response = error.Response;
+                dataStream = response.GetResponseStream();
+                StreamReader reader = new StreamReader(dataStream);
+                string responseFromServer = reader.ReadToEnd();
+                reader.Close();
+                dataStream.Close();
+                response.Close();  
+                return responseFromServer;  
+            }
+            
+            
 
-            return responseFromServer;
+            
         }
 
         
