@@ -17,25 +17,20 @@ namespace CirrusConsoleDemo
         public string instance_url;
         public Dictionary<string, string> properties;
 
-        public CirrusConsoleDemo() {}
-
         static void Main(string[] args)
         {
             CirrusConsoleDemo c = new CirrusConsoleDemo();
-            c.init();
             if(c.login()) {
                 c.insertItem();
             }
         }
 
-        public void init()
-        {
+        public CirrusConsoleDemo() {
             properties = new Dictionary<string, string>();
             foreach (String row in File.ReadAllLines("buyerapp.txt"))
             {
                 properties.Add(row.Split('=')[0], row.Split('=')[1]);
             }
-            
         }
 
         public Boolean login()
