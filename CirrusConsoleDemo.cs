@@ -62,7 +62,6 @@ namespace CirrusConsoleDemo
 
         public void insertItem()
         {
-            string endpoint = "https://" + instance_url + "/services/data/v" + properties["api"] + "/sobjects/Merchandise__c";
             string postData;
             if(properties["merchandise_price"] != "") {
               postData = "{\"Name\" : \"" + properties["merchandise_name"] + "\", \"Price__c\" : " + properties["merchandise_price"] + "}";
@@ -71,6 +70,9 @@ namespace CirrusConsoleDemo
             {
                 postData = "{\"Name\" : \"" + properties["merchandise_name"] + "\"}";
             }
+            
+
+            string endpoint = "https://" + instance_url + "/services/data/v" + properties["api"] + "/sobjects/Merchandise__c";
             string responseFromServer = doHTTPRequest(endpoint, postData, token, true);
             Console.Write("\n");
             responseFromServer = responseFromServer.Replace("{","");
