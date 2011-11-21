@@ -10,7 +10,7 @@ namespace CirrusConsoleDemo
 {
     class CirrusConsoleDemo
     {
-        private const string oauthendpoint = "https://login.salesforce.com/services/oauth2/token";
+        private const string oauthendpoint = "/services/oauth2/token";
         private const string oauthoptions = "grant_type=password";
 
         public string token;
@@ -23,8 +23,9 @@ namespace CirrusConsoleDemo
         {
             CirrusConsoleDemo c = new CirrusConsoleDemo();
             c.init();
-            c.login();
-            c.insertItem();
+            if(c.login()) {
+                c.insertItem();
+            }
         }
 
         public void init()
@@ -34,21 +35,34 @@ namespace CirrusConsoleDemo
             {
                 properties.Add(row.Split('=')[0], row.Split('=')[1]);
             }
-            Console.Write("Logging in for "+properties["username"]);
+            
         }
 
-        public void login()
+        public Boolean login()
         {
-            string postData = oauthoptions + "&client_id=" + properties["consumerkey"] + "&client_secret=" + properties["privatekey"] + "&username=" + properties["username"] + "&password=" + properties["password"];
-            string responseFromServer = doHTTPRequest(oauthendpoint, postData, "", false);
-            string[] data = responseFromServer.Split(':');
-            token = data[7];
-            token = token.Substring(1, token.Length - 1);
-            token = token.Replace("\"}", "");
+            Console.Write("Logging in: "+properties["username"]+", "+properties["login_url"]);
+            
+            try {
+                string login_params =  oauthoptions + "&client_id=" + properties["consumerkey"] + "&client_secret=" + properties["privatekey"] + "&username=" + properties["username"] + "&password=" + properties["password"];
+                string responseFromServer = doHTTPRequest(properties["login_url"] + oauthendpoint, login_params, "", false);
+                
+                string[] data = responseFromServer.Split(':');
+                token = data[7];
+                token = token.Substring(1, token.Length - 1);
+                token = token.Replace("\"}", "");
 
-            instance_url = data[5];
-            instance_url = instance_url.Substring(2, instance_url.Length - 2);
-            instance_url = instance_url.Substring(0, instance_url.IndexOf("\""));
+                instance_url = data[5];
+                instance_url = instance_url.Substring(2, instance_url.Length - 2);
+                instance_url = instance_url.Substring(0, instance_url.IndexOf("\""));
+
+                return true;
+                } catch (System.Exception error) {
+                Console.Write(error);
+                Console.Write("\n\nError logging in.  Please check that buyerapp.txt has proper credentials.\n"); 
+                    
+                
+                return false;      
+                }
         }
 
         public void insertItem()
@@ -56,13 +70,20 @@ namespace CirrusConsoleDemo
             string endpoint = "https://" + instance_url + "/services/data/v" + properties["api"] + "/sobjects/Merchandise__c";
             string postData;
             if(properties["merchandise_price"] != "") {
-              postData = "{\"Name\" : \"" + properties["merchandise_name"] + "\", \"Price__c\" : \"" + properties["merchandise_price"] + "\"}";
+              postData = "{\"Name\" : \"" + properties["merchandise_name"] + "\", \"Price__c\" : " + properties["merchandise_price"] + "}";
             }
             else
             {
                 postData = "{\"Name\" : \"" + properties["merchandise_name"] + "\"}";
             }
             string responseFromServer = doHTTPRequest(endpoint, postData, token, true);
+            Console.Write("\n");
+            responseFromServer = responseFromServer.Replace("{","");
+            responseFromServer = responseFromServer.Replace("}","");
+            responseFromServer = responseFromServer.Replace("[","");
+            responseFromServer = responseFromServer.Replace("]","");
+            responseFromServer = responseFromServer.Replace(",","\n");
+            
             Console.Write(responseFromServer);
         }
 
